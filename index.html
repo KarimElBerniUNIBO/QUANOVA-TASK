@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Banco</title>
+<meta name="description" content="Task board a checklist, con stato condiviso in tempo reale.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="./src/styles.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <h1>Banco</h1>
+      <p>Task, checklist e note. Chi apre il link vede e aggiorna la stessa board.</p>
+    </div>
+
+    <div class="top-stats">
+      <div class="stat"><span class="k">Completate</span><span class="v" id="stat-done">0/0</span></div>
+      <div class="stat"><span class="k">In corso</span><span class="v" id="stat-doing">0</span></div>
+      <div class="stat"><span class="k">Bloccate</span><span class="v" id="stat-blocked">0</span></div>
+      <div class="stat"><span class="k">Sync</span><span class="sync" id="sync"></span></div>
+    </div>
+
+    <div class="top-actions">
+      <button type="button" id="btn-new" class="primary">Nuova task</button>
+      <button type="button" id="btn-groups" class="ghost">Gruppi</button>
+      <button type="button" id="btn-import" class="ghost">Importa</button>
+      <button type="button" id="btn-export" class="ghost">Esporta</button>
+      <button type="button" id="btn-clear" class="ghost danger">Svuota</button>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <div class="cols">
+    <aside class="rail">
+      <div class="rail-block">
+        <div class="rail-title">Chi sei</div>
+        <input type="text" id="me" placeholder="Il tuo nome" autocomplete="name">
+        <p class="railnote">Firma le modifiche, così gli altri sanno chi ha aggiornato cosa.</p>
+      </div>
+
+      <div class="rail-block">
+        <div class="rail-title">Gruppi</div>
+        <nav class="group-nav" id="group-nav"></nav>
+        <div class="meter" title="Avanzamento totale"><i id="meter-all" style="width:0%"></i></div>
+      </div>
+
+      <div class="rail-block">
+        <div class="rail-title">Filtri</div>
+        <div class="filters">
+          <label for="f-status">Stato</label>
+          <select id="f-status">
+            <option value="all">Tutti</option>
+            <option value="open">Non completate</option>
+            <option value="todo">Da fare</option>
+            <option value="doing">In corso</option>
+            <option value="done">Fatte</option>
+            <option value="blocked">Bloccate</option>
+          </select>
+          <label for="f-priority">Priorità</label>
+          <select id="f-priority">
+            <option value="all">Tutte</option>
+            <option value="P0">Solo P0</option>
+            <option value="P0P1">P0 + P1</option>
+          </select>
+          <label for="f-q">Cerca</label>
+          <input type="search" id="f-q" placeholder="titolo, note, passi…">
+        </div>
+      </div>
+
+      <div class="rail-block">
+        <div class="rail-title">Ultime modifiche</div>
+        <div class="recent" id="recent"></div>
+      </div>
+    </aside>
+
+    <main id="main"></main>
+  </div>
+
+  <footer class="foot">
+    <span>Effort: S ≈ 3 gg · M ≈ 1 sett · L ≈ 2–3 sett · XL ≈ 4+ sett</span>
+    <span>I dati restano nella board: esportali in JSON per portarli altrove.</span>
+  </footer>
+</div>
+
+<dialog id="editor">
+  <form id="editor-form" method="dialog">
+    <h2 id="editor-title">Nuova task</h2>
+
+    <div class="field">
+      <label for="e-title">Titolo</label>
+      <input type="text" id="e-title" maxlength="200" required placeholder="Cosa va fatto">
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="e-group">Gruppo</label>
+        <select id="e-group"></select>
+      </div>
+      <div class="field">
+        <label for="e-status">Stato</label>
+        <select id="e-status"></select>
+      </div>
+      <div class="field">
+        <label for="e-priority">Priorità</label>
+        <select id="e-priority"></select>
+      </div>
+      <div class="field">
+        <label for="e-effort">Effort</label>
+        <select id="e-effort"></select>
+        <span class="hint" id="e-effort-hint"></span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="e-desc">Descrizione</label>
+      <textarea id="e-desc" rows="3" placeholder="Perché serve, cosa comprende"></textarea>
+    </div>
+
+    <div class="field">
+      <label for="e-steps">Passi della checklist</label>
+      <textarea id="e-steps" rows="6" placeholder="Un passo per riga"></textarea>
+      <span class="hint">Un passo per riga. Le spunte già fatte restano.</span>
+    </div>
+
+    <div class="field">
+      <label for="e-deps">Dipende da</label>
+      <input type="text" id="e-deps" placeholder="Titoli o codici, separati da virgola">
+    </div>
+
+    <div class="dialog-actions">
+      <button type="button" id="editor-cancel" class="ghost">Annulla</button>
+      <button type="submit" class="primary">Salva</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="groups">
+  <h2>Gruppi</h2>
+  <p class="hint">Il nome e il periodo compaiono in testa a ogni sezione della board.</p>
+  <div id="groups-list" class="groups-list"></div>
+  <div class="dialog-actions">
+    <button type="button" id="groups-add" class="ghost">Aggiungi gruppo</button>
+    <button type="button" id="groups-close" class="primary">Chiudi</button>
+  </div>
+</dialog>
+
+<input type="file" id="import-file" accept="application/json,.json" hidden>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

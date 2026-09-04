@@ -1,0 +1,1214 @@
+{
+  "schema": "banco.board",
+  "version": 1,
+  "exportedAt": "2026-09-04T21:24:19.934Z",
+  "groups": [
+    {
+      "id": "g-f0",
+      "name": "F0 · Fondamenta",
+      "window": "Sett. 1–6",
+      "goal": "Le cinque cose che tutto il resto assume. Saltarle non fa risparmiare tempo: lo sposta più avanti, moltiplicato.",
+      "order": 100
+    },
+    {
+      "id": "g-f1",
+      "name": "F1 · Configuratore & materiali",
+      "window": "Sett. 3–12",
+      "goal": "Il blocco che porta i soldi. Tutto qui dentro è P0: è la ragione per cui un brand di gioielleria firma.",
+      "order": 200
+    },
+    {
+      "id": "g-f2",
+      "name": "F2 · Strumenti tecnici & distribuzione",
+      "window": "Sett. 10–18",
+      "goal": "Ciò che rende la piattaforma credibile per chi è tecnico e usabile fuori dalla piattaforma stessa.",
+      "order": 300
+    },
+    {
+      "id": "g-f3",
+      "name": "F3 · AI & formati avanzati",
+      "window": "Sett. 16–26",
+      "goal": "Differenziazione. Alto rischio tecnico: ognuna di queste va prototipata prima di essere promessa a un cliente.",
+      "order": 400
+    },
+    {
+      "id": "g-f4",
+      "name": "F4 · Esplorativo · NTH",
+      "window": "Sett. 24+",
+      "goal": "Non prima che F1 sia in produzione da almeno un mese con un cliente pagante.",
+      "order": 500
+    },
+    {
+      "id": "g-fx",
+      "name": "FX · Trasversali",
+      "window": "Continuo",
+      "goal": "Non hanno una data di fine. Se non hanno un proprietario, non succedono.",
+      "order": 600
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T-01",
+      "title": "Device matrix e budget di performance del viewer",
+      "group": "g-f0",
+      "status": "todo",
+      "priority": "P0",
+      "effort": "L",
+      "desc": "Il tuo punto « viewer, stress test su più dispositivi » diventa operativo solo quando esiste una matrice di device e delle soglie numeriche. Altrimenti « va lento su Android » resta un'opinione.\n\nCritica e proposta — Lo stress test non è un task che si chiude: è un cancello che ogni release deve attraversare. Definisci ora 4 KPI (time-to-first-frame, fps p50 e p95, picco memoria GPU, secondi prima del throttling termico su iPhone) e 3 fasce di device (flagship, medio 2022, low-end Android). Senza baseline non saprai mai quale feature ha peggiorato le cose, e con diamanti e gemme la degradazione arriva in fretta.",
+      "deps": [],
+      "steps": [
+        {
+          "text": "Definire la matrice: 3 fasce × iOS/Android/desktop, con i modelli reali su cui testerai",
+          "done": false
+        },
+        {
+          "text": "Fissare le soglie: TTFF < 2,5 s su 4G, ≥ 30 fps p95 su medio-gamma, tetto memoria per scena",
+          "done": false
+        },
+        {
+          "text": "Scegliere 3 scene campione di riferimento (anello semplice, collier con 200 pietre, scena AI)",
+          "done": false
+        },
+        {
+          "text": "Automatizzare la misura (device farm o rack fisico) ed esporre i risultati in un report per build",
+          "done": false
+        },
+        {
+          "text": "Definire cosa succede quando una build sfora: blocco del rilascio o deroga firmata",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 100,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-02",
+      "title": "Pipeline colore e tone mapping unificati",
+      "group": "g-f0",
+      "status": "todo",
+      "priority": "P0",
+      "effort": "M",
+      "desc": "Spazio lineare in tutta la catena, tone mapping unico (AgX o ACES filmic), gestione esplicita di sRGB/linear per ogni texture, KTX2/Basis per la compressione.\n\nCritica e proposta — Aggiunta mia, e va prima dei materiali. Oro, argento e gemme sono al 90% riflessione: senza una pipeline colore coerente lo stesso anello sarà giallo-verde su un device e rosato su un altro, e passerai mesi a « sistemare i materiali » quando il problema è a monte. È anche la differenza visibile tra il tuo viewer e quello di iJewel3D.",
+      "deps": [],
+      "steps": [
+        {
+          "text": "Scegliere e fissare il tone mapping (AgX consigliato per i metalli, meno saturazione bruciata di ACES)",
+          "done": false
+        },
+        {
+          "text": "Audit di tutte le texture esistenti: quali sono sRGB, quali lineari (roughness, metalness, normal)",
+          "done": false
+        },
+        {
+          "text": "Adottare KTX2 + Basis con transcodifica per device, con fallback JPEG",
+          "done": false
+        },
+        {
+          "text": "Definire il workflow di esposizione (EV) e renderlo un parametro salvato nella scena",
+          "done": false
+        },
+        {
+          "text": "Suite di confronto: stesso modello su 5 device, screenshot affiancati, delta colore accettabile",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 200,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-03",
+      "title": "Modello dati Scena / Variante / Opzione e store condiviso",
+      "group": "g-f0",
+      "status": "todo",
+      "priority": "P0",
+      "effort": "L",
+      "desc": "Uno schema unico che descrive cosa è configurabile, quali componenti esistono, quali materiali sono ammessi, quale camera e quale luce sono attive. Lo stato vive fuori dal viewer, serializzabile in URL.\n\nCritica e proposta — Aggiunta mia, ed è il vero prerequisito nascosto. Configuratore, camere salvate, finestre separate, AR, export e deep-link condivisibili sono tutte proiezioni dello stesso stato. Se non lo definisci adesso, lo riscriverai cinque volte e le feature andranno fuori sincrono tra loro. È qui che si decide se il multi-finestra sarà un pomeriggio o un rewrite.",
+      "deps": [],
+      "steps": [
+        {
+          "text": "Schema JSON versionato: scena, componenti, slot, opzioni, vincoli tra opzioni (regole di compatibilità)",
+          "done": false
+        },
+        {
+          "text": "Store centrale fuori dal viewer con eventi di cambiamento tipizzati",
+          "done": false
+        },
+        {
+          "text": "Serializzazione bidirezionale stato ⇄ URL (deep-link a una configurazione precisa)",
+          "done": false
+        },
+        {
+          "text": "Migrazioni: cosa succede a un link salvato quando il modello viene aggiornato",
+          "done": false
+        },
+        {
+          "text": "Test: stessa configurazione ricostruita identica da URL su due sessioni diverse",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 300,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-04",
+      "title": "Ingest e ottimizzazione asset da CAD gioielleria",
+      "group": "g-f0",
+      "status": "todo",
+      "priority": "P0",
+      "effort": "XL",
+      "desc": "Pipeline da Rhino (.3dm), Matrix, 3Design e ZBrush verso glTF ottimizzato: retopo o decimazione controllata, UV, bake, naming dei componenti, convenzioni di scala e orientamento.\n\nCritica e proposta — Aggiunta mia, e secondo me è il collo di bottiglia operativo che ucciderà la roadmap se ignorato. I CAD di gioielleria sono NURBS con tassellazione densissima: un solitario esce a 2 milioni di triangoli. Se ogni modello richiede tre ore di lavoro manuale per entrare in piattaforma, il configuratore non scala e la tua marginalità sparisce nel servizio. Misura oggi quanto tempo costa un modello: è il numero più importante che hai.",
+      "deps": [
+        "T-02"
+      ],
+      "steps": [
+        {
+          "text": "Misurare il costo attuale: minuti-uomo per portare un modello dal CAD al viewer",
+          "done": false
+        },
+        {
+          "text": "Definire le convenzioni obbligatorie: unità, orientamento, naming di componenti e slot materiale",
+          "done": false
+        },
+        {
+          "text": "Automatizzare tassellazione adattiva + decimazione con soglie per fascia di device",
+          "done": false
+        },
+        {
+          "text": "Auto-UV e bake (AO, normal) per i pezzi che lo richiedono",
+          "done": false
+        },
+        {
+          "text": "Validatore in ingresso che rifiuta o segnala i modelli fuori standard, con report leggibile",
+          "done": false
+        },
+        {
+          "text": "Obiettivo dichiarato: < 20 minuti-uomo per modello standard entro fine fase",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 400,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-05",
+      "title": "Telemetria del viewer e visual regression",
+      "group": "g-f0",
+      "status": "todo",
+      "priority": "P1",
+      "effort": "M",
+      "desc": "Raccolta anonima di fps, device, tempi di caricamento ed errori dai viewer in produzione, più test a immagine di riferimento che segnalano quando un render cambia senza motivo.\n\nCritica e proposta — Aggiunta mia. Il rendering è l'unico tipo di software dove una regressione è invisibile ai test unitari e ovvia al cliente. Le golden image costano poco e ti proteggono ogni volta che tocchi la pipeline colore o i materiali.",
+      "deps": [
+        "T-01"
+      ],
+      "steps": [
+        {
+          "text": "Evento di telemetria minimo: device, GPU, fps medio, TTFF, errori di caricamento",
+          "done": false
+        },
+        {
+          "text": "Dashboard interna con distribuzione reale dei device dei clienti (guiderà le priorità)",
+          "done": false
+        },
+        {
+          "text": "Golden image per 8–10 scene, confronto automatico con soglia di tolleranza percettiva",
+          "done": false
+        },
+        {
+          "text": "Integrare il confronto nella CI, con approvazione manuale delle differenze volute",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 500,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-06",
+      "title": "Materiali metallici: oro giallo, bianco, rosa, argento, platino",
+      "group": "g-f1",
+      "status": "todo",
+      "priority": "P0",
+      "effort": "L",
+      "desc": "Libreria di metalli fisicamente plausibili con anisotropia della lucidatura, varianti di finitura (lucido, satinato, spazzolato, sabbiato), rodiatura e opzione di annerimento/ossidazione.\n\nCritica e proposta — Il punto della tua lista « diamanti, gemme, oro, argento » vale due task diversi: i metalli sono un problema di riflessione e di finitura, le pietre sono un problema di rifrazione. Separali, hanno costi e rischi molto diversi. Nota commerciale: i clienti giudicheranno l'oro rosa e l'argento ossidato più di ogni altra cosa, sono i più difficili da azzeccare.",
+      "deps": [
+        "T-02"
+      ],
+      "steps": [
+        {
+          "text": "Definire i parametri canonici per ogni lega (valori IOR/colore da riferimenti reali, non a occhio)",
+          "done": false
+        },
+        {
+          "text": "Anisotropia orientata sulla direzione di lucidatura, con mappa di direzione",
+          "done": false
+        },
+        {
+          "text": "Set di finiture come preset combinabili, non come materiali separati",
+          "done": false
+        },
+        {
+          "text": "Confronto A/B con foto reali del cliente per validare ogni lega",
+          "done": false
+        },
+        {
+          "text": "Libreria condivisa e versionata, riusabile tra i modelli",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 600,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-07",
+      "title": "Diamanti e gemme: rifrazione, dispersione, sparkle",
+      "group": "g-f1",
+      "status": "todo",
+      "priority": "P0",
+      "effort": "XL",
+      "desc": "Shader dedicato per le pietre: doppia rifrazione approssimata, dispersione (fuoco), scintillio in movimento, tabelle di taglio (brillante, princess, marquise, smeraldo) e colore per tipo di gemma.\n\nCritica e proposta — È qui che il budget mobile esplode. La rifrazione fisicamente corretta in tempo reale su un pavé da 200 pietre non è realistica su un medio-gamma: servono tre livelli di qualità (path-traced per il render di marketing, cubemap-based per desktop, impostor pre-cotto per mobile) e un passaggio automatico tra i livelli. Decidi anche subito la linea sulla certificazione: se mostri « GIA VS1 » accanto a un render, quel render diventa una dichiarazione commerciale.",
+      "deps": [
+        "T-02",
+        "T-01"
+      ],
+      "steps": [
+        {
+          "text": "Prototipo shader su singola pietra: rifrazione, dispersione, riflessioni interne",
+          "done": false
+        },
+        {
+          "text": "Definire 3 tier di qualità e la regola automatica di scelta per device",
+          "done": false
+        },
+        {
+          "text": "Impostor pre-cotto (probe per taglio) come fallback mobile, validato visivamente",
+          "done": false
+        },
+        {
+          "text": "Test di scala: pavé 200+ pietre, misurare fps e memoria contro le soglie di T-01",
+          "done": false
+        },
+        {
+          "text": "Tabella parametri per taglio e tipo di pietra (diamante, zaffiro, rubino, smeraldo, perla)",
+          "done": false
+        },
+        {
+          "text": "Decidere e documentare cosa NON si promette come fedeltà gemmologica",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 700,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-08",
+      "title": "Camere: salvataggio, richiamo, transizioni",
+      "group": "g-f1",
+      "status": "todo",
+      "priority": "P0",
+      "effort": "M",
+      "desc": "Il tuo punto « fissare le camere, salvarle e richiamare ». Camere nominate per modello, transizioni interpolate, vincoli (limiti di orbita e zoom), inquadrature standard riusabili tra modelli.\n\nCritica e proposta — Aggiungerei due cose che la formulazione originale non copre: le camere devono essere richiamabili dall'esterno (dal SDK di embed e da un link), e servono inquadrature standard di catalogo — vista frontale, tre quarti, dettaglio castone — applicabili automaticamente a ogni nuovo modello. Altrimenti ogni modello richiede lavoro manuale e ricadi nel problema di T-04.",
+      "deps": [
+        "T-03"
+      ],
+      "steps": [
+        {
+          "text": "Camere nominate salvate nella scena, con transizione interpolata e durata configurabile",
+          "done": false
+        },
+        {
+          "text": "Vincoli di orbita, pan e zoom per evitare inquadrature che rompono l'illusione",
+          "done": false
+        },
+        {
+          "text": "Set di inquadrature standard applicabile automaticamente in base al bounding box",
+          "done": false
+        },
+        {
+          "text": "Richiamo via URL, via SDK e via UI",
+          "done": false
+        },
+        {
+          "text": "Camera di default per anteprima e per generazione della thumbnail di catalogo",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 800,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-09",
+      "title": "Preset di luce e libreria HDRI da studio",
+      "group": "g-f1",
+      "status": "todo",
+      "priority": "P0",
+      "effort": "M",
+      "desc": "Il tuo « preset light camera ». Set curato di ambienti da studio per gioielleria (softbox, tavolo lucido, gradient), più luci aggiuntive controllabili e intensità dei riflessi separata dall'esposizione.\n\nCritica e proposta — Trattali come una libreria curata, non come uno slider: nella fotografia di gioielleria la luce è un mestiere, e cinque preset costruiti bene valgono più di venti parametri. Cattura o acquista HDRI reali ad alto range dinamico — sono il motore delle riflessioni, e sono anche la base tecnica su cui poggerà o cadrà il punto sullo sfondo generato con AI (T-19).",
+      "deps": [
+        "T-02"
+      ],
+      "steps": [
+        {
+          "text": "Acquisire o produrre 6–8 HDRI da studio ad alto range dinamico, specifici per gioielleria",
+          "done": false
+        },
+        {
+          "text": "Preset = HDRI + rotazione + esposizione + luci extra, salvati come oggetto unico",
+          "done": false
+        },
+        {
+          "text": "Controllo di rotazione dell'ambiente e intensità riflessi indipendente dallo sfondo visibile",
+          "done": false
+        },
+        {
+          "text": "Anteprime dei preset generate automaticamente sul modello corrente",
+          "done": false
+        },
+        {
+          "text": "Preset di default per tipo di prodotto (anello, collana, orecchini)",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 900,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-10",
+      "title": "Configuratore L1 — cambio texture e materiale",
+      "group": "g-f1",
+      "status": "todo",
+      "priority": "P0",
+      "effort": "L",
+      "desc": "Primo livello del tuo punto MAX PRIORITY: la geometria resta, cambiano materiali e finiture. Slot materiale dichiarati sul modello, opzioni per slot, anteprime, stato condivisibile.\n\nCritica e proposta — Dei due livelli che hai descritto, questo è quello che va in produzione per primo e da solo giustifica un contratto. Consiglio pratico: costruiscilo su un modello reale di un cliente reale entro 4 settimane, anche con le fondamenta ancora incomplete, per validare UX e prezzo prima di investire in L2. Attenzione al vincolo che tutti sottovalutano: le regole di compatibilità (questo castone non esiste in platino) vanno nel modello dati, non nella UI.",
+      "deps": [
+        "T-03",
+        "T-06"
+      ],
+      "steps": [
+        {
+          "text": "Slot materiale dichiarati nell'asset e riconosciuti automaticamente in ingesta",
+          "done": false
+        },
+        {
+          "text": "UI di scelta con anteprime reali renderizzate, non swatch piatti",
+          "done": false
+        },
+        {
+          "text": "Regole di compatibilità tra opzioni gestite dallo stato, non dall'interfaccia",
+          "done": false
+        },
+        {
+          "text": "Deep-link e thumbnail per configurazione",
+          "done": false
+        },
+        {
+          "text": "Pilota su un modello di un cliente reale, con feedback raccolto per iscritto",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 1000,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-11",
+      "title": "Configuratore L2 — cambio modello e componenti",
+      "group": "g-f1",
+      "status": "todo",
+      "priority": "P0",
+      "effort": "XL",
+      "desc": "Secondo livello: cambiano anche geometrie e componenti (montatura, taglio della pietra, misura, catena, chiusura), con caricamento progressivo dei pezzi e ricalcolo dei vincoli.\n\nCritica e proposta — Questo è un ordine di grandezza più costoso di L1, non il doppio: componenti intercambiabili significa punti di aggancio standardizzati, scala coerente, materiali che si propagano tra pezzi diversi e streaming dei componenti per non ricaricare tutta la scena. Dipende interamente dalla pipeline di ingesta (T-04): senza convenzioni rigide sugli asset, i pezzi non si incastreranno. Fai anche una scelta esplicita: combinatoria libera o catalogo di combinazioni valide? La seconda è molto più gestibile e di solito è ciò che il brand vuole davvero.",
+      "deps": [
+        "T-10",
+        "T-04"
+      ],
+      "steps": [
+        {
+          "text": "Definire i punti di aggancio (socket) e le convenzioni geometriche per i componenti",
+          "done": false
+        },
+        {
+          "text": "Caricamento progressivo e cache dei componenti, senza ricostruire la scena",
+          "done": false
+        },
+        {
+          "text": "Propagazione dei materiali tra componenti e gestione delle esclusioni",
+          "done": false
+        },
+        {
+          "text": "Decidere tra combinatoria libera e catalogo di combinazioni valide, e documentarlo",
+          "done": false
+        },
+        {
+          "text": "Generazione di SKU o codice configurazione esportabile verso l'e-commerce",
+          "done": false
+        },
+        {
+          "text": "Test di stress: configurazione cambiata 50 volte di seguito, memoria stabile",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 1100,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-12",
+      "title": "Embed, SDK JavaScript ed eventi per e-commerce",
+      "group": "g-f1",
+      "status": "todo",
+      "priority": "P0",
+      "effort": "L",
+      "desc": "Iframe leggero, API JS (carica modello, imposta configurazione, richiama camera, screenshot), eventi in uscita (configurazione cambiata, aggiungi al carrello), integrazione Shopify e WooCommerce.\n\nCritica e proposta — Aggiunta mia, e la considero P0 quanto il configuratore stesso: un configuratore che non entra nel checkout del cliente è una demo, non un prodotto. È esattamente il punto su cui Emersya e VNTANA vincono le gare. Va progettato insieme a T-03, non dopo.",
+      "deps": [
+        "T-03",
+        "T-10"
+      ],
+      "steps": [
+        {
+          "text": "Embed con caricamento asincrono e peso iniziale sotto una soglia dichiarata",
+          "done": false
+        },
+        {
+          "text": "API pubblica documentata, versionata, con esempi copiabili",
+          "done": false
+        },
+        {
+          "text": "Eventi in uscita per il carrello e per l'analytics del cliente",
+          "done": false
+        },
+        {
+          "text": "App o plugin per Shopify come primo canale",
+          "done": false
+        },
+        {
+          "text": "Politica CORS, domini autorizzati per licenza, e limiti d'uso",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 1200,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-13",
+      "title": "Prezzo e disponibilità dinamici per configurazione",
+      "group": "g-f1",
+      "status": "todo",
+      "priority": "P1",
+      "effort": "M",
+      "desc": "Ogni configurazione produce un prezzo: peso del metallo, caratura e qualità delle pietre, misura, lavorazione. Regole di prezzo lato cliente o via webhook al suo gestionale.\n\nCritica e proposta — Aggiunta mia, specifica della gioielleria: qui il prezzo dipende dalla configurazione molto più che nell'arredamento o nelle sneakers, e cambia col mercato dell'oro. Senza questo, il configuratore si ferma un passo prima della vendita, che è il passo che il cliente paga.",
+      "deps": [
+        "T-11",
+        "T-12"
+      ],
+      "steps": [
+        {
+          "text": "Modello di regole di prezzo (base + delta per opzione, o webhook esterno)",
+          "done": false
+        },
+        {
+          "text": "Calcolo del peso metallo dalla geometria come input al prezzo",
+          "done": false
+        },
+        {
+          "text": "Gestione di disponibilità e tempi di consegna per opzione",
+          "done": false
+        },
+        {
+          "text": "Visualizzazione del prezzo con disclaimer e data di aggiornamento della quotazione",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 1300,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-14",
+      "title": "Inspector tecnico: wireframe, x-ray, UV, statistiche",
+      "group": "g-f2",
+      "status": "todo",
+      "priority": "P1",
+      "effort": "M",
+      "desc": "Il tuo punto sull'inspector stile Sketchfab: wireframe, x-ray, visualizzazione UV, normali, canali del materiale isolati, conteggio triangoli e draw call, lista texture con peso e risoluzione.\n\nCritica e proposta — Consiglio di anticiparlo rispetto a dove l'avevi messo: costa poco ed è prima di tutto uno strumento tuo. È con questo che diagnostichi i problemi di T-01 e validi la pipeline di T-04 — smetti di indovinare perché una scena è lenta. Il valore per il cliente tecnico (B2B, chi vende modelli) è un bonus che arriva gratis.",
+      "deps": [],
+      "steps": [
+        {
+          "text": "Modalità di visualizzazione: wireframe, x-ray, normali, UV checker, canali PBR isolati",
+          "done": false
+        },
+        {
+          "text": "Pannello statistiche: triangoli, draw call, texture con peso, memoria stimata",
+          "done": false
+        },
+        {
+          "text": "Ispezione per oggetto: selezione, gerarchia, materiali applicati",
+          "done": false
+        },
+        {
+          "text": "Segnalazione automatica dei problemi (UV sovrapposte, normali invertite, texture sovradimensionate)",
+          "done": false
+        },
+        {
+          "text": "Visibilità configurabile: interno, cliente tecnico, o nascosto",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 1400,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-15",
+      "title": "Export multi-formato e multi-qualità con permessi",
+      "group": "g-f2",
+      "status": "todo",
+      "priority": "P1",
+      "effort": "L",
+      "desc": "Export alla Sketchfab: scelta del formato (glTF/GLB, OBJ+MTL, USDZ, FBX, STL per la stampa), tier di poligoni (originale, alto, medio, basso via decimazione), tier di texture (4K/2K/1K/512, compressa o meno), con anteprima del peso finale.\n\nCritica e proposta — Questo è il punto che hai aggiunto in coda ed è quello con più implicazioni legali. In gioielleria il modello 3D È l'asset di valore: renderlo scaricabile è regalare lo stampo. Progetta l'export come un permesso per modello e per cliente, con default « nessun download », opzione « solo mesh decimata senza dettaglio del castone », watermark geometrico e log di chi scarica cosa. Aggiungi anche l'export della singola configurazione (non solo del modello base) e l'export a fini di stampa 3D, che in gioielleria è una vendita a sé.",
+      "deps": [
+        "T-04",
+        "T-03"
+      ],
+      "steps": [
+        {
+          "text": "Matrice formati × qualità con stima del peso mostrata prima del download",
+          "done": false
+        },
+        {
+          "text": "Decimazione a tier con preservazione dei bordi vivi (critico su castoni e incisioni)",
+          "done": false
+        },
+        {
+          "text": "Rescaling e ricompressione texture per tier, con anteprima comparativa",
+          "done": false
+        },
+        {
+          "text": "Permessi per modello e per utente, default a download disabilitato",
+          "done": false
+        },
+        {
+          "text": "Watermark geometrico o texture di firma sulle versioni scaricabili",
+          "done": false
+        },
+        {
+          "text": "Log degli export, con chi, quando, quale qualità",
+          "done": false
+        },
+        {
+          "text": "Export della configurazione corrente, non solo del modello di base",
+          "done": false
+        },
+        {
+          "text": "Preset dedicato per stampa 3D (STL watertight, controllo manifold)",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 1500,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-16",
+      "title": "Finestre separate e viewport sincronizzati",
+      "group": "g-f2",
+      "status": "todo",
+      "priority": "P2",
+      "effort": "M",
+      "desc": "Il tuo punto sulle finestre separate: viewer su un secondo schermo, pannello di controllo su un altro, oppure due viste dello stesso modello (dettaglio e insieme) sincronizzate.\n\nCritica e proposta — È economico solo se T-03 è stato fatto bene: con lo stato già fuori dal viewer, questo diventa un canale di sincronizzazione (BroadcastChannel) e poco altro. Se invece lo stato vive dentro il componente viewer, è un rewrite. Chiarisci anche il caso d'uso reale, perché ne cambia il valore: è per il venditore in showroom con schermo cliente, o per l'operatore che lavora al modello? Se è lo showroom, il requisito vero è « lo schermo cliente non deve mai mostrare l'interfaccia ».",
+      "deps": [
+        "T-03"
+      ],
+      "steps": [
+        {
+          "text": "Definire il caso d'uso primario (showroom vs operatore) e progettare per quello",
+          "done": false
+        },
+        {
+          "text": "Sincronizzazione dello stato tra finestre via BroadcastChannel",
+          "done": false
+        },
+        {
+          "text": "Modalità presentazione: viewport pulito, nessun controllo, nessun testo di interfaccia",
+          "done": false
+        },
+        {
+          "text": "Gestione della perdita di connessione tra finestre e riallineamento",
+          "done": false
+        },
+        {
+          "text": "Test multi-schermo con risoluzioni e DPI diversi",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 1600,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-17",
+      "title": "AR: Quick Look, Scene Viewer e WebXR",
+      "group": "g-f2",
+      "status": "todo",
+      "priority": "P1",
+      "effort": "L",
+      "desc": "Il tuo punto AR: USDZ per iOS (Quick Look), glTF per Android (Scene Viewer), WebXR dove supportato, con accesso dal viewer e dall'embed del cliente.\n\nCritica e proposta — Non è una feature, sono tre pipeline con tre formati e tre livelli di controllo, e il costo nascosto è convertire la configurazione corrente in USDZ al volo — inclusi i materiali delle gemme, che in Quick Look non puoi controllare come nel tuo shader. Aspettati che i diamanti in AR sembrino vetro. Per la gioielleria valuterei anche se l'AR su superficie serve davvero: un anello si prova sulla mano, non si appoggia sul tavolo. Il vero AR di categoria è il try-on (T-22), che è un progetto diverso.",
+      "deps": [
+        "T-03",
+        "T-15"
+      ],
+      "steps": [
+        {
+          "text": "Conversione server-side della configurazione corrente in USDZ, con cache",
+          "done": false
+        },
+        {
+          "text": "Percorso Android via Scene Viewer con lo stesso stato",
+          "done": false
+        },
+        {
+          "text": "Valutare WebXR come terza via solo dopo aver misurato il supporto reale sui device dei clienti",
+          "done": false
+        },
+        {
+          "text": "Definire e documentare la degradazione visiva attesa dei materiali in AR",
+          "done": false
+        },
+        {
+          "text": "Decidere la scala di riferimento e il comportamento su superficie vs su corpo",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 1700,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-18",
+      "title": "Ambientazione automatica AI del modello",
+      "group": "g-f3",
+      "status": "todo",
+      "priority": "P2",
+      "effort": "L",
+      "desc": "Il tuo punto « dato un modello lo voglio vedere ambientato »: analisi del prodotto e scelta automatica di preset luce, camera, sfondo e composizione già impostati, pronti da pubblicare.\n\nCritica e proposta — È il punto AI con il rapporto valore/rischio migliore, perché non genera pixel: sceglie tra opzioni curate che hai già validato in T-09. Fallo prima di T-19, non dopo. Suggerimento: rendilo il « primo minuto » dell'esperienza, cioè ciò che il cliente vede appena carica un modello, invece di una scena grigia di default.",
+      "deps": [
+        "T-09",
+        "T-08"
+      ],
+      "steps": [
+        {
+          "text": "Classificare il prodotto (tipo, dimensione, metallo dominante, presenza pietre)",
+          "done": false
+        },
+        {
+          "text": "Regole o modello leggero che mappano la classe su preset luce, camera e sfondo",
+          "done": false
+        },
+        {
+          "text": "Generare 3 proposte alternative invece di una sola, lasciando la scelta all'utente",
+          "done": false
+        },
+        {
+          "text": "Permettere la modifica manuale del risultato senza perdere la proposta",
+          "done": false
+        },
+        {
+          "text": "Misurare quante proposte vengono accettate senza modifiche: è il KPI della feature",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 1800,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-19",
+      "title": "Sfondo generato con AI da screenshot, con HDRI",
+      "group": "g-f3",
+      "status": "todo",
+      "priority": "P2",
+      "effort": "XL",
+      "desc": "Il tuo punto: si manda uno screenshot della vista corrente, l'AI genera l'ambiente e restituisce anche l'HDRI corrispondente per illuminare la scena in modo coerente.\n\nCritica e proposta — La critica più tecnica della lista. Un panorama generato è LDR: non contiene il range dinamico reale delle sorgenti luminose, e su oro e diamanti — che sono quasi solo riflessione — l'illuminazione risulta piatta e le luci speculari sbagliate. L'inverse tone mapping recupera solo una parte. Proposta alternativa: separa i due ruoli. L'AI genera il backplate (ciò che si vede dietro, dove la fedeltà fisica non serve), mentre l'illuminazione arriva da un HDRI reale della libreria T-09 scelto automaticamente per somiglianza di direzione e temperatura della luce. Il risultato è più bello e molto più economico. Se vuoi comunque l'HDRI generato, tienilo per gli sfondi lontani e valuta il costo GPU (T-29) prima di prometterlo.",
+      "deps": [
+        "T-18",
+        "T-02"
+      ],
+      "steps": [
+        {
+          "text": "Prototipo A: HDRI generato integralmente — misurare l'errore sulle riflessioni metalliche",
+          "done": false
+        },
+        {
+          "text": "Prototipo B: backplate AI + HDRI reale accoppiato — confronto visivo cieco tra A e B",
+          "done": false
+        },
+        {
+          "text": "Stima esposizione e direzione luce dal prompt o dall'immagine, per l'accoppiamento",
+          "done": false
+        },
+        {
+          "text": "Coerenza tra sfondo, ombra a terra e riflessi (il punto in cui la finzione cade)",
+          "done": false
+        },
+        {
+          "text": "Gestione dei diritti sulle immagini generate e watermark se richiesto dal cliente",
+          "done": false
+        },
+        {
+          "text": "Coda asincrona, cache dei risultati e limite d'uso per licenza",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 1900,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-20",
+      "title": "Modelli animati con timeline",
+      "group": "g-f3",
+      "status": "todo",
+      "priority": "P2",
+      "effort": "L",
+      "desc": "Il tuo punto sulle animazioni: import di clip glTF, timeline con play/pausa/scrub, animazioni multiple selezionabili, eventi sincronizzati con la camera.\n\nCritica e proposta — In gioielleria l'uso reale è ristretto ma preciso: apertura di una chiusura, meccanismo di un orologio, rotazione da vetrina, esploso dei componenti. Costruisci per questi casi invece di un editor di animazione generico, che costa dieci volte tanto e non lo userà nessuno. L'esploso in particolare si sposa con l'inspector (T-14) e con il configuratore a componenti (T-11).",
+      "deps": [
+        "T-03"
+      ],
+      "steps": [
+        {
+          "text": "Import e riproduzione di clip glTF multiple, con selezione",
+          "done": false
+        },
+        {
+          "text": "Timeline con scrub, loop, velocità, e marker",
+          "done": false
+        },
+        {
+          "text": "Animazione di camera sincronizzata con le clip",
+          "done": false
+        },
+        {
+          "text": "Esploso automatico dei componenti (generato, non autorato) come caso d'uso di punta",
+          "done": false
+        },
+        {
+          "text": "Costo di memoria e performance su mobile misurato contro le soglie di T-01",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 2000,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-21",
+      "title": "Gaussian splatting nella piattaforma",
+      "group": "g-f3",
+      "status": "todo",
+      "priority": "P3",
+      "effort": "L",
+      "desc": "Il tuo punto sui gaussian splat: import, visualizzazione e gestione di scene 3DGS accanto ai modelli poligonali.\n\nCritica e proposta — Il punto che declasserei di più. Il 3DGS è una pipeline di rendering separata dal PBR: niente relighting, niente riflessioni corrette, materiali non modificabili — cioè l'opposto di un configuratore. I file sono pesanti e il sorting per profondità è caro su mobile. Su un gioiello, che è tutto riflessione e trasparenza, la cattura riesce male proprio dove conta. Ha senso per due usi soltanto: catturare l'ambiente o la vetrina in cui ambientare il modello, e mostrare il prodotto reale accanto a quello configurabile come prova di fedeltà. Prima di programmarlo, chiediti quale cliente lo ha chiesto. Se nessuno, resti in F3 solo come prototipo di due settimane.",
+      "deps": [
+        "T-01"
+      ],
+      "steps": [
+        {
+          "text": "Definire il caso d'uso e verificarlo con almeno un cliente prima di investire",
+          "done": false
+        },
+        {
+          "text": "Prototipo di import e rendering, misurando peso file e fps su mobile",
+          "done": false
+        },
+        {
+          "text": "Valutare la conversione 3DGS → mesh come alternativa più integrabile",
+          "done": false
+        },
+        {
+          "text": "Decidere se il 3DGS convive nella stessa scena del PBR o resta una vista separata",
+          "done": false
+        },
+        {
+          "text": "Gate: si prosegue solo se il prototipo passa le soglie di T-01",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 2100,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-22",
+      "title": "Video try-on per mano, polso e orecchio",
+      "group": "g-f4",
+      "status": "todo",
+      "priority": "P3",
+      "effort": "XL",
+      "desc": "Il tuo NTH con riferimento a WannaKicks e DressX: prova virtuale in tempo reale con tracking della mano o del polso e occlusione corretta.\n\nCritica e proposta — Tecnicamente è il progetto più duro della lista — tracking della mano a 30 fps con occlusione credibile su un anello che è piccolo, lucido e riflette la scena reale — ma il blocco vero è legale: il video del volto o della mano è dato biometrico. GDPR e AI Act richiedono base giuridica, informativa e, se possibile, elaborazione interamente on-device senza upload. Fai valutare questo punto da un legale prima della prima riga di codice, non dopo il prototipo. Alternativa più economica e già efficace: try-on da foto caricata, non in tempo reale.",
+      "deps": [
+        "T-17"
+      ],
+      "steps": [
+        {
+          "text": "Valutazione legale su dati biometrici, base giuridica e conservazione — prima di tutto il resto",
+          "done": false
+        },
+        {
+          "text": "Decidere se elaborazione on-device obbligatoria (raccomandato) o server",
+          "done": false
+        },
+        {
+          "text": "Prototipo di tracking mano/polso con occlusione, misurato su medio-gamma",
+          "done": false
+        },
+        {
+          "text": "Alternativa a costo ridotto: try-on da foto statica caricata dall'utente",
+          "done": false
+        },
+        {
+          "text": "Test con utenti reali su credibilità percepita: è l'unico criterio che conta qui",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 2200,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-23",
+      "title": "Copilota AI con contesto della piattaforma",
+      "group": "g-f4",
+      "status": "todo",
+      "priority": "P3",
+      "effort": "L",
+      "desc": "Il tuo NTH: assistente che conosce lo stato della scena, i modelli, i materiali e la documentazione, e può eseguire azioni (imposta luce, cambia materiale, esporta) su richiesta.\n\nCritica e proposta — Diventa fattibile quasi gratis se T-03 esiste: se lo stato è già uno schema serializzabile e le azioni sono già un'API (T-12), il copilota è un livello sottile sopra cose che hai già. Se invece lo costruisci prima, dovrai inventare quell'API due volte. Metti dei limiti sulle azioni distruttive e un annulla sempre disponibile — un assistente che modifica la scena del cliente senza undo è un incidente in attesa.",
+      "deps": [
+        "T-03",
+        "T-14"
+      ],
+      "steps": [
+        {
+          "text": "Esporre lo stato e le azioni come strumenti tipizzati (riuso dell'API di T-12)",
+          "done": false
+        },
+        {
+          "text": "Ancorare le risposte alla documentazione e allo stato reale, non alla memoria del modello",
+          "done": false
+        },
+        {
+          "text": "Undo obbligatorio su ogni azione, conferma sulle azioni distruttive",
+          "done": false
+        },
+        {
+          "text": "Limiti di costo per utente e per licenza (vedi T-29)",
+          "done": false
+        },
+        {
+          "text": "Partire dall'aiuto in sola lettura, aggiungere il controllo solo dopo",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 2300,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-24",
+      "title": "Audit esterno di motore e architettura",
+      "group": "g-f4",
+      "status": "todo",
+      "priority": "P2",
+      "effort": "M",
+      "desc": "Il tuo punto sull'audit: revisione indipendente dell'architettura del viewer, della pipeline di rendering e delle scelte di performance.\n\nCritica e proposta — Vale, ma il momento giusto è dopo che F0 e F1 sono in piedi: un audit su fondamenta non ancora scritte produce consigli generici. Preparalo con domande precise — dove perdiamo fps, dove la pipeline colore è sbagliata, dove il modello dati non reggerà L2 — altrimenti ricevi una lista di buone pratiche che sai già.",
+      "deps": [
+        "T-01",
+        "T-03"
+      ],
+      "steps": [
+        {
+          "text": "Scrivere le 5 domande specifiche a cui l'audit deve rispondere",
+          "done": false
+        },
+        {
+          "text": "Preparare scene e misure di riferimento da consegnare al revisore",
+          "done": false
+        },
+        {
+          "text": "Fissare la finestra temporale a valle del rilascio di F1",
+          "done": false
+        },
+        {
+          "text": "Trasformare l'esito in task datati, non in un documento archiviato",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 2400,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-25",
+      "title": "Accordo operativo con Florin su gestione e cambiamenti",
+      "group": "g-fx",
+      "status": "todo",
+      "priority": "P0",
+      "effort": "S",
+      "desc": "Il tuo punto « capire con Florin come gestire Treddi e i cambiamenti », reso verificabile: chi decide cosa, come entra una modifica, con che cadenza si rilascia, cosa significa « finito ».\n\nCritica e proposta — È l'unico punto della tua lista senza un output verificabile, ed è anche quello che, se resta vago, farà slittare tutti gli altri. Trasformalo in un documento di due pagine con nomi e date: proprietà per area (chi decide sul rendering, chi sul prodotto), processo per una modifica non banale, cadenza di rilascio, definizione di « finito » (include performance e test?), e come si gestisce una richiesta urgente di un cliente in mezzo alla roadmap. Mettilo per primo: costa tre giorni e protegge sei mesi.",
+      "deps": [],
+      "steps": [
+        {
+          "text": "Definire la proprietà per area e chi decide in caso di disaccordo",
+          "done": false
+        },
+        {
+          "text": "Processo per una modifica non banale: proposta scritta breve, revisione, decisione",
+          "done": false
+        },
+        {
+          "text": "Cadenza di rilascio fissa e regola per le urgenze fuori ciclo",
+          "done": false
+        },
+        {
+          "text": "Definizione di « finito » che includa soglie di performance e test",
+          "done": false
+        },
+        {
+          "text": "Revisione della roadmap ogni 4 settimane, con priorità ri-decise esplicitamente",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 2500,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-26",
+      "title": "Multi-tenant, ruoli e permessi",
+      "group": "g-fx",
+      "status": "todo",
+      "priority": "P1",
+      "effort": "L",
+      "desc": "Organizzazioni, brand, utenti interni del cliente e utenti finali, con permessi su modelli, download, pubblicazione e analytics.\n\nCritica e proposta — Aggiunta mia. È noioso e invisibile, ma tutto ciò che riguarda export (T-15), analytics (T-27) e pubblicazione ci poggia sopra. Ritardarlo significa aggiungere permessi a posteriori dentro codice che assume un solo tenant — sempre più costoso di quanto sembri.",
+      "deps": [
+        "T-03"
+      ],
+      "steps": [
+        {
+          "text": "Modello di tenant, ruoli e permessi, con il caso « agenzia che gestisce più brand »",
+          "done": false
+        },
+        {
+          "text": "Permessi su modello: visibile, configurabile, scaricabile, pubblicabile",
+          "done": false
+        },
+        {
+          "text": "Spazi separati per asset e librerie materiali per tenant",
+          "done": false
+        },
+        {
+          "text": "Audit log delle azioni sensibili",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 2600,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-27",
+      "title": "Analytics della configurazione per il cliente",
+      "group": "g-fx",
+      "status": "todo",
+      "priority": "P1",
+      "effort": "M",
+      "desc": "Quali varianti vengono configurate di più, dove gli utenti abbandonano, quanto tempo passano sul viewer, quali viste guardano, correlazione con le conversioni.\n\nCritica e proposta — Aggiunta mia, ed è probabilmente il tuo argomento di vendita più forte dopo il configuratore stesso: è ciò che Emersya vende davvero, cioè non « un bel 3D » ma « sappiamo cosa vogliono comprare i tuoi clienti ». Costa poco perché gli eventi esistono già in T-12, e giustifica un canone ricorrente invece di un progetto una tantum.",
+      "deps": [
+        "T-12"
+      ],
+      "steps": [
+        {
+          "text": "Eventi standard: apertura, interazione, cambio opzione, richiesta AR, aggiunta al carrello",
+          "done": false
+        },
+        {
+          "text": "Dashboard per il cliente con le combinazioni più configurate",
+          "done": false
+        },
+        {
+          "text": "Heatmap delle viste e delle opzioni ignorate",
+          "done": false
+        },
+        {
+          "text": "Export dei dati e conformità privacy (nessun dato personale nel tracciamento base)",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 2700,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-28",
+      "title": "Benchmark competitivo strutturato",
+      "group": "g-fx",
+      "status": "todo",
+      "priority": "P2",
+      "effort": "S",
+      "desc": "I riferimenti che hai già indicato — Emersya, Sketchfab, iJewel3D, VNTANA, Badvisor — analizzati con criteri fissi invece che a impressione.\n\nCritica e proposta — Rendilo un confronto misurabile e ripetuto ogni trimestre: stesso modello di prova, stessi device, stesse metriche di T-01, più prezzi e modello di licenza. Nota che i cinque riferimenti giocano partite diverse: iJewel3D è il concorrente diretto sulla gioielleria, Emersya è il metro sul configuratore, Sketchfab su inspector ed export, VNTANA sull'ottimizzazione automatica. Il confronto più utile è con iJewel3D; gli altri servono a rubare singole idee.",
+      "deps": [],
+      "steps": [
+        {
+          "text": "Definire 8 criteri fissi e un modello di prova comune",
+          "done": false
+        },
+        {
+          "text": "Prima passata completa, con screenshot e numeri",
+          "done": false
+        },
+        {
+          "text": "Sintesi delle 3 cose che fanno meglio di te e delle 3 che tu fai meglio",
+          "done": false
+        },
+        {
+          "text": "Ripetere ogni trimestre, tracciando i cambiamenti",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 2800,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-29",
+      "title": "Budget GPU e quote per le funzionalità AI",
+      "group": "g-fx",
+      "status": "todo",
+      "priority": "P1",
+      "effort": "S",
+      "desc": "Costo per generazione, coda, cache, limiti per licenza e comportamento quando la quota è esaurita, per le feature di T-18, T-19 e T-23.\n\nCritica e proposta — Aggiunta mia. Tre feature AI a costo variabile senza un modello di costo è il modo classico di scoprire a posteriori che una funzione perde soldi a ogni utilizzo. Bastano pochi giorni ora: costo unitario stimato, quota inclusa nel piano, cosa succede oltre.",
+      "deps": [],
+      "steps": [
+        {
+          "text": "Stimare il costo unitario di ogni generazione (env, HDRI, ambientazione, messaggio copilota)",
+          "done": false
+        },
+        {
+          "text": "Definire quote per piano e comportamento al superamento",
+          "done": false
+        },
+        {
+          "text": "Cache aggressiva dei risultati e deduplicazione delle richieste identiche",
+          "done": false
+        },
+        {
+          "text": "Monitoraggio della spesa con allarme su soglia",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 2900,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    },
+    {
+      "id": "T-30",
+      "title": "Embed accessibile, SEO e multilingua",
+      "group": "g-fx",
+      "status": "todo",
+      "priority": "P2",
+      "effort": "M",
+      "desc": "Navigazione da tastiera del configuratore, testi alternativi, contrasto, fallback statico indicizzabile per i motori di ricerca e interfaccia tradotta.\n\nCritica e proposta — Aggiunta mia. Due ragioni concrete: l'accessibilità è un requisito d'acquisto per i marchi grandi (e in Europa lo sta diventando per legge sull'e-commerce), e un configuratore che si presenta ai crawler come una tela vuota danneggia la SEO della pagina prodotto del cliente — obiezione che ti verrà fatta in fase di vendita.",
+      "deps": [
+        "T-12"
+      ],
+      "steps": [
+        {
+          "text": "Navigazione completa da tastiera e ruoli ARIA sulle opzioni di configurazione",
+          "done": false
+        },
+        {
+          "text": "Fallback statico con immagine e testo indicizzabile sotto il canvas",
+          "done": false
+        },
+        {
+          "text": "Contrasto e dimensioni tocco verificati sui controlli del viewer",
+          "done": false
+        },
+        {
+          "text": "Stringhe esternalizzate e almeno IT/EN al primo rilascio",
+          "done": false
+        }
+      ],
+      "note": "",
+      "order": 3000,
+      "createdAt": "2026-09-04T00:00:00.000Z",
+      "updatedAt": "",
+      "by": ""
+    }
+  ]
+}

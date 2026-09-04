@@ -1,0 +1,17 @@
+{
+  "name": "banco",
+  "version": "1.0.0",
+  "description": "Task board a checklist, con stato condiviso in tempo reale. Zero dipendenze.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "start": "node scripts/dev.mjs",
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build.mjs"
+  },
+  "keywords": ["tasks", "checklist", "kanban", "roadmap", "artifact"],
+  "engines": {
+    "node": ">=18"
+  },
+  "files": ["index.html", "src", "scripts", "examples"]
+}
