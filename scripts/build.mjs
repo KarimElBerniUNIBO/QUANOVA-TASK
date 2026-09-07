@@ -9,7 +9,14 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const root = resolve(new URL("..", import.meta.url).pathname);
-const MODULES = ["src/model.js", "src/store.js", "src/ui.js", "src/main.js"];
+const MODULES = [
+  "src/model.js",
+  "src/accounts.js",
+  "src/auth.js",
+  "src/store.js",
+  "src/ui.js",
+  "src/main.js"
+];
 
 function stripModuleSyntax(source) {
   return source

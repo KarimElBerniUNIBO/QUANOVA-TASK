@@ -12,6 +12,34 @@
 </head>
 <body>
 
+<div class="gate" id="gate" hidden>
+  <form class="gatebox" id="login-form">
+    <h1>Banco</h1>
+    <p class="gatesub">Accedi per aprire la board.</p>
+
+    <div class="field">
+      <label for="l-email">Email</label>
+      <input type="email" id="l-email" required autocomplete="username" placeholder="nome@quanovastudio.com">
+    </div>
+
+    <div class="field">
+      <label for="l-pass">Password</label>
+      <input type="password" id="l-pass" required autocomplete="current-password">
+    </div>
+
+    <p class="gateerr" id="login-error" role="alert" hidden></p>
+
+    <button type="submit" class="primary" id="login-submit">Entra</button>
+
+    <p class="gatenote">
+      Il controllo avviene su questo browser: tiene fuori chi arriva per caso e firma
+      le modifiche con il tuo nome. Non sostituisce i permessi di accesso alla pagina.
+    </p>
+  </form>
+</div>
+
+<div id="app" hidden>
+
 <header class="top">
   <div class="top-inner">
     <div class="brand">
@@ -40,9 +68,13 @@
   <div class="cols">
     <aside class="rail">
       <div class="rail-block">
-        <div class="rail-title">Chi sei</div>
-        <input type="text" id="me" placeholder="Il tuo nome" autocomplete="name">
-        <p class="railnote">Firma le modifiche, così gli altri sanno chi ha aggiornato cosa.</p>
+        <div class="rail-title">Sessione</div>
+        <div class="who">
+          <span class="who-name" id="who-name"></span>
+          <span class="who-mail" id="who-mail"></span>
+        </div>
+        <button type="button" id="btn-logout" class="ghost wide">Esci</button>
+        <p class="railnote">Le tue modifiche vengono firmate con questo nome.</p>
       </div>
 
       <div class="rail-block">
@@ -87,6 +119,8 @@
     <span>Effort: S ≈ 3 gg · M ≈ 1 sett · L ≈ 2–3 sett · XL ≈ 4+ sett</span>
     <span>I dati restano nella board: esportali in JSON per portarli altrove.</span>
   </footer>
+</div>
+
 </div>
 
 <dialog id="editor">

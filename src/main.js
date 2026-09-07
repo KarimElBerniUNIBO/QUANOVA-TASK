@@ -4,6 +4,7 @@
 import { createStore } from "./store.js";
 import { createUI, createEditor } from "./ui.js";
 import { exportBoard, importBoard, newGroup, UNGROUPED } from "./model.js";
+import { verify, readSession, writeSession, clearSession, cryptoAvailable } from "./auth.js";
 
 const store = createStore();
 const noteTimers = new Map();
@@ -64,10 +65,6 @@ document.getElementById("btn-import").addEventListener("click", () => actions.im
 document.getElementById("btn-export").addEventListener("click", exportJson);
 document.getElementById("btn-groups").addEventListener("click", openGroups);
 document.getElementById("btn-clear").addEventListener("click", clearBoard);
-
-document.getElementById("me").addEventListener("input", e => {
-  store.setMe(e.target.value);
-});
 
 document.getElementById("import-file").addEventListener("change", async event => {
   const file = event.target.files && event.target.files[0];
@@ -217,16 +214,94 @@ function toast(message, isError) {
   toastTimer = setTimeout(() => { box.className = "toast"; }, 4000);
 }
 
-// --- avvio -----------------------------------------------------------------
+// --- accesso ---------------------------------------------------------------
 
-store.subscribe(() => {
-  if (!ui.focusedInTextarea()) ui.render();
+const gate = document.getElementById("gate");
+const app = document.getElementById("app");
+const loginForm = document.getElementById("login-form");
+const loginError = document.getElementById("login-error");
+const loginSubmit = document.getElementById("login-submit");
+let started = false;
+
+function showError(message) {
+  loginError.textContent = message;
+  loginError.hidden = false;
+}
+
+function enter(user) {
+  store.setMe(user.name);
+  document.getElementById("who-name").textContent = user.name;
+  document.getElementById("who-mail").textContent = user.email;
+  gate.hidden = true;
+  app.hidden = false;
+  if (!started) {
+    started = true;
+    start();
+  }
+  ui.render();
+}
+
+loginForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  loginError.hidden = true;
+
+  if (!cryptoAvailable()) {
+    showError("Questo browser non può verificare la password: serve una connessione sicura (https o localhost).");
+    return;
+  }
+
+  const email = document.getElementById("l-email").value;
+  const password = document.getElementById("l-pass");
+
+  loginSubmit.disabled = true;
+  loginSubmit.textContent = "Verifica…";
+  try {
+    const user = await verify(email, password.value);
+    if (!user) {
+      showError("Email o password non corrette.");
+      password.value = "";
+      password.focus();
+      return;
+    }
+    writeSession(user);
+    password.value = "";
+    enter(user);
+  } catch (err) {
+    showError("Verifica non riuscita. Riprova.");
+  } finally {
+    loginSubmit.disabled = false;
+    loginSubmit.textContent = "Entra";
+  }
 });
 
-ui.render();
-store.connect();
+document.getElementById("btn-logout").addEventListener("click", () => {
+  clearSession();
+  store.setMe("");
+  app.hidden = true;
+  gate.hidden = false;
+  document.getElementById("l-pass").value = "";
+  document.getElementById("l-email").focus();
+});
 
-// Tiene veri i "2 ore fa" senza interrompere chi sta scrivendo una nota.
-setInterval(() => {
-  if (!ui.focusedInTextarea()) ui.render();
-}, 60000);
+// --- avvio -----------------------------------------------------------------
+
+function start() {
+  store.subscribe(() => {
+    if (!ui.focusedInTextarea()) ui.render();
+  });
+
+  store.connect();
+
+  // Tiene veri i "2 ore fa" senza interrompere chi sta scrivendo una nota.
+  setInterval(() => {
+    if (!ui.focusedInTextarea()) ui.render();
+  }, 60000);
+}
+
+const session = readSession();
+if (session) {
+  enter(session);
+} else {
+  gate.hidden = false;
+  document.getElementById("l-email").focus();
+}

@@ -21,7 +21,6 @@ export function createUI(store, actions) {
     main: document.getElementById("main"),
     groupNav: document.getElementById("group-nav"),
     recent: document.getElementById("recent"),
-    me: document.getElementById("me"),
     sync: document.getElementById("sync"),
     meterAll: document.getElementById("meter-all"),
     statDone: document.getElementById("stat-done"),
@@ -231,7 +230,6 @@ export function createUI(store, actions) {
     renderStats(all);
     renderNav(all, groups);
     renderRecent(all);
-    if (nodes.me.value !== store.me) nodes.me.value = store.me;
     renderSync();
   }
 

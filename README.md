@@ -23,6 +23,33 @@ La board parte vuota. Per vedere subito com'è piena, premi **Importa** e scegli
 - **Firma e cronologia**: chi scrive il proprio nome firma ogni modifica; il pannello "Ultime modifiche" mostra le cinque task toccate più di recente.
 - **Import ed export JSON**, per travasare una board, salvarne una copia o versionarla in git.
 
+## Accesso
+
+La board si apre con email e password. Gli account stanno in `src/accounts.js`: la password non c'è, c'è solo il risultato di **PBKDF2-SHA256 con 310.000 iterazioni** e un sale casuale diverso per ogni account. La sessione dura 30 giorni e il nome dell'account firma automaticamente ogni modifica.
+
+Per cambiare una password o aggiungere una persona:
+
+```bash
+node scripts/hash-password.mjs nome@dominio.it "Nome" "nuova password"
+```
+
+Stampa una voce da sostituire in `src/accounts.js`. Chi viene tolto dal file perde la sessione al primo caricamento successivo.
+
+### Cosa protegge davvero
+
+Poco, ed è importante saperlo.
+
+Il controllo gira nel browser di chi apre la pagina. Chiunque sappia usare gli strumenti per sviluppatori può saltarlo e leggere la board: **non è una barriera di sicurezza**, è un cancello contro chi arriva per caso, più un modo per sapere chi ha fatto cosa senza doverlo digitare. La barriera vera è chi può aprire la pagina: se è pubblicata come Artifact, l'accesso è limitato ai membri dell'organizzazione.
+
+Due conseguenze pratiche:
+
+- **non scrivere nelle note niente che non potrebbe leggere chi ha il link**;
+- se il repo è pubblico, l'hash è pubblico. Con una password corta o comune, provarla a tappeto è solo questione di tempo di calcolo. Password lunga, o repo privato:
+
+```bash
+gh repo edit --visibility private
+```
+
 ## Le due modalità di salvataggio
 
 La stessa pagina funziona in due modi e lo dice sempre nell'indicatore in alto a destra.
@@ -56,15 +83,18 @@ Resta un caso limite dichiarato: se due persone modificano **lo stesso campo** i
 ## Struttura
 
 ```
-index.html            pagina e finestre di dialogo
-src/model.js          schema, validazione, import/export — funzioni pure
-src/store.js          persistenza: localStorage e database condiviso
-src/ui.js             rendering ed editor
-src/main.js           avvio, azioni della barra in alto
-src/styles.css        token di colore e stili
-scripts/dev.mjs       server statico per lo sviluppo
-scripts/build.mjs     impacchetta tutto in dist/artifact.html
-examples/             board di esempio da importare
+index.html               pagina, schermata di accesso e finestre di dialogo
+src/model.js             schema, validazione, import/export — funzioni pure
+src/accounts.js          account abilitati (email, nome, hash PBKDF2)
+src/auth.js              verifica della password e sessione
+src/store.js             persistenza: localStorage e database condiviso
+src/ui.js                rendering ed editor
+src/main.js              avvio, accesso, azioni della barra in alto
+src/styles.css           token di colore e stili
+scripts/dev.mjs          server statico per lo sviluppo
+scripts/build.mjs        impacchetta tutto in dist/artifact.html
+scripts/hash-password.mjs genera la voce di un account
+examples/                board di esempio da importare
 ```
 
 `src/model.js` non tocca il DOM e non salva niente: sono solo dati e funzioni pure, quindi è il punto da cui partire per capire il resto o per riusarlo altrove.
