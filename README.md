@@ -56,10 +56,39 @@ La stessa pagina funziona in due modi e lo dice sempre nell'indicatore in alto a
 
 | Modalità | Quando | Dove finiscono i dati |
 |---|---|---|
-| `solo su questo dispositivo` | aperta in locale o su un hosting statico | `localStorage` del browser |
+| `solo su questo dispositivo` | nessun archivio remoto raggiungibile | `localStorage` del browser |
+| `stato condiviso` | `src/config.js` compilato (sito su Vercel) | Supabase, condiviso tra tutti quelli che aprono l'indirizzo |
 | `stato condiviso` | pubblicata come Artifact con la capability `db` | database dell'artifact, condiviso tra tutti quelli che hanno il link |
 
-La pagina parte sempre in locale e passa a condivisa appena il database risponde, così non resta mai bloccata ad aspettare. Se la board condivisa è vuota e su quel dispositivo c'era del lavoro, viene portato su una volta sola.
+La pagina parte sempre in locale e passa a condivisa appena l'archivio risponde, così non resta mai bloccata ad aspettare. Se l'archivio condiviso è vuoto e su quel dispositivo c'era del lavoro, viene portato su una volta sola.
+
+I due archivi remoti espongono la stessa interfaccia dentro `src/store.js` — `setTask`, `patchTask`, `deleteTask`, `setGroups` — quindi il resto dell'app non sa quale dei due sta usando, e aggiungerne un terzo significa scrivere solo quelle quattro funzioni.
+
+## Deploy su Vercel, con la board condivisa
+
+Sul sito pubblicato il tempo reale arriva da **Supabase**: il database dell'artifact di Claude esiste solo dentro quel visualizzatore, quindi fuori serve un archivio vero. Senza Supabase configurato il sito funziona lo stesso, ma ogni browser ha la sua board separata.
+
+**1. Crea il progetto Supabase** (piano gratuito). Apri *SQL Editor*, incolla `supabase/schema.sql` ed esegui: crea le due tabelle, accende gli aggiornamenti in tempo reale e imposta le regole di accesso.
+
+**2. Prendi le due chiavi** in *Project Settings → API*: il *Project URL* e la chiave pubblica *anon*.
+
+**3. Collega il repo a Vercel** e aggiungi le variabili d'ambiente del progetto:
+
+| Variabile | Valore |
+|---|---|
+| `SUPABASE_URL` | `https://xxxx.supabase.co` |
+| `SUPABASE_ANON_KEY` | la chiave *anon* |
+| `BOARD_ID` | un nome qualsiasi, es. `quanova` |
+
+A ogni deploy Vercel esegue `scripts/config-from-env.mjs`, che genera `src/config.js` da queste variabili. **Le chiavi non entrano mai nel repo**, e se sbagli l'indirizzo il deploy si ferma con un messaggio invece di pubblicare un sito muto.
+
+**4. Primo avvio**: apri il sito, accedi e premi *Importa* con un file JSON, oppure crea le task a mano. Se il tuo browser aveva già una board locale e su Supabase non c'è ancora niente, viene caricata su automaticamente, una volta sola.
+
+Da quel momento tu e chi apre lo stesso indirizzo lavorate sulla stessa board: le modifiche degli altri compaiono senza ricaricare.
+
+### Quanto è protetta
+
+La chiave *anon* è pensata per stare nel browser, non è un segreto: a comandare sono le regole di accesso di Supabase. Quelle in `schema.sql` sono **aperte** — chi conosce indirizzo e chiave legge e scrive la board. Va bene per una board interna su un indirizzo che non pubblicizzi; per dati riservati serve Supabase Auth al posto del cancello che gira nel browser (istruzioni in coda a `schema.sql`).
 
 ## Pubblicarla come Artifact
 
@@ -87,13 +116,17 @@ index.html               pagina, schermata di accesso e finestre di dialogo
 src/model.js             schema, validazione, import/export — funzioni pure
 src/accounts.js          account abilitati (email, nome, hash PBKDF2)
 src/auth.js              verifica della password e sessione
-src/store.js             persistenza: localStorage e database condiviso
+src/config.js            indirizzo e chiave di Supabase (vuoti = solo locale)
+src/remote-supabase.js   adattatore Supabase: righe e tempo reale
+src/store.js             persistenza: locale, Supabase o database dell'artifact
 src/ui.js                rendering ed editor
 src/main.js              avvio, accesso, azioni della barra in alto
 src/styles.css           token di colore e stili
 scripts/dev.mjs          server statico per lo sviluppo
 scripts/build.mjs        impacchetta tutto in dist/artifact.html
 scripts/hash-password.mjs genera la voce di un account
+scripts/config-from-env.mjs genera src/config.js al deploy
+supabase/schema.sql      tabelle, tempo reale e regole di accesso
 examples/                board di esempio da importare
 ```
 

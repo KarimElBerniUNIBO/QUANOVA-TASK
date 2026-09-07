@@ -1,10 +1,16 @@
-// Persistenza. Due modalità, stessa interfaccia:
-//   - "local"  → localStorage, visibile solo su questo dispositivo
-//   - "shared" → database dell'artifact, condiviso in tempo reale tra chi apre il link
-// La pagina parte sempre in locale e passa a condivisa quando il database risponde,
-// così non resta mai bloccata ad aspettare qualcosa che potrebbe non arrivare.
+// Persistenza. La board sta sempre nel browser; in più, quando c'è, parla con
+// un archivio remoto che la rende la stessa per tutti.
+//
+//   locale     → solo localStorage: la board vive in questo browser
+//   condivisa  → Supabase (sito pubblicato), oppure il database dell'artifact
+//                di Claude quando la pagina gira lì dentro
+//
+// I due archivi remoti espongono la stessa interfaccia — setTask, patchTask,
+// deleteTask, setGroups — così il resto del file non sa quale sta usando.
 
 import { normalizeTask, normalizeGroup, sortTasks, sortGroups } from "./model.js";
+import { supabaseConfigured } from "./config.js";
+import { createSupabaseRemote } from "./remote-supabase.js";
 
 const LS_TASKS = "banco.tasks.v1";
 const LS_GROUPS = "banco.groups.v1";
@@ -36,7 +42,7 @@ export function createStore() {
   let groups = [];
   let mode = "local";
   let statusText = "solo su questo dispositivo";
-  let db = null;
+  let remote = null;
   let migrated = false;
   let me = "";
 
@@ -45,8 +51,6 @@ export function createStore() {
   } catch (e) {
     me = "";
   }
-
-  // --- caricamento iniziale dal dispositivo -------------------------------
 
   for (const raw of readLS(LS_TASKS, [])) {
     const t = normalizeTask(raw);
@@ -69,37 +73,28 @@ export function createStore() {
     emit();
   }
 
+  /** Cambia il messaggio senza toccare la modalità: un salvataggio fallito
+   *  non significa che la board sia tornata locale. */
+  function note(text) {
+    statusText = text;
+    emit();
+  }
+
   function stampOf() {
     return { updatedAt: new Date().toISOString(), by: me };
   }
 
   // --- scritture ----------------------------------------------------------
 
-  function fail() {
-    setStatus("local", "salvataggio non riuscito");
-  }
-
-  function pushTask(task) {
-    if (!db) return;
-    db.doc(TASKS + "/" + task.id).set(task).catch(fail);
-  }
-
-  function pushGroups() {
-    if (!db) return;
-    db.doc(META).set({ groups, updatedAt: new Date().toISOString() }).catch(fail);
-  }
-
   function saveTask(task) {
     const clean = normalizeTask(Object.assign({}, task, stampOf()), task.id);
     tasks.set(clean.id, clean);
     mirror();
     emit();
-    pushTask(clean);
+    if (remote) remote.setTask(clean);
     return clean;
   }
 
-  /** Scrive solo i campi toccati: due persone sulla stessa task non si
-   *  sovrascrivono a vicenda tutto il documento. */
   function patchTask(id, patch) {
     const current = tasks.get(id);
     if (!current) return null;
@@ -107,18 +102,7 @@ export function createStore() {
     tasks.set(id, next);
     mirror();
     emit();
-
-    if (db) {
-      const body = Object.assign({}, patch, stampOf());
-      const ref = db.doc(TASKS + "/" + id);
-      ref.update(body)
-        .catch(err => {
-          // update esige un documento già esistente: alla prima modifica lo si crea.
-          if (err && err.code === "invalid_argument") return ref.set(next);
-          throw err;
-        })
-        .catch(fail);
-    }
+    if (remote) remote.patchTask(id, Object.assign({}, patch, stampOf()), next);
     return next;
   }
 
@@ -126,14 +110,14 @@ export function createStore() {
     tasks.delete(id);
     mirror();
     emit();
-    if (db) db.doc(TASKS + "/" + id).delete().catch(fail);
+    if (remote) remote.deleteTask(id);
   }
 
   function saveGroups(next) {
     groups = sortGroups(next.map(normalizeGroup));
     mirror();
     emit();
-    pushGroups();
+    if (remote) remote.setGroups(groups);
     return groups;
   }
 
@@ -148,10 +132,10 @@ export function createStore() {
     mirror();
     emit();
 
-    if (db) {
-      for (const id of removed) db.doc(TASKS + "/" + id).delete().catch(fail);
-      for (const t of tasks.values()) pushTask(t);
-      pushGroups();
+    if (remote) {
+      for (const id of removed) remote.deleteTask(id);
+      for (const t of tasks.values()) remote.setTask(t);
+      remote.setGroups(groups);
     }
   }
 
@@ -161,54 +145,122 @@ export function createStore() {
     groups = [];
     mirror();
     emit();
-    if (db) {
-      for (const id of ids) db.doc(TASKS + "/" + id).delete().catch(fail);
-      pushGroups();
+    if (remote) {
+      for (const id of ids) remote.deleteTask(id);
+      remote.setGroups(groups);
     }
   }
 
-  // --- connessione allo stato condiviso -----------------------------------
+  // --- arrivo dei dati dagli altri ----------------------------------------
 
-  function adoptTasks(snap) {
-    for (const change of snap.docChanges()) {
-      if (change.type === "removed") tasks.delete(change.doc.id);
-      else tasks.set(change.doc.id, normalizeTask(change.doc.data(), change.doc.id));
-    }
+  function adoptTask(raw) {
+    const t = normalizeTask(raw);
+    tasks.set(t.id, t);
     mirror();
+    emit();
   }
 
-  function migrateIfEmpty(snap) {
-    // Se la board condivisa è vuota e su questo dispositivo c'è del lavoro,
-    // lo si porta su una volta sola. Nessun dato altrui viene toccato: è vuota.
-    if (migrated || snap.metadata.fromCache || !snap.empty) return;
+  function adoptGroups(list) {
+    groups = sortGroups(list.map(normalizeGroup));
+    mirror();
+    emit();
+  }
+
+  function dropTask(id) {
+    tasks.delete(id);
+    mirror();
+    emit();
+  }
+
+  /** Se l'archivio condiviso è vuoto e qui c'è del lavoro, lo si porta su una
+   *  volta sola. Non sovrascrive niente di nessuno: è vuoto. */
+  function seedIfEmpty(remoteIsEmpty) {
+    if (migrated || !remoteIsEmpty) return;
     migrated = true;
     const local = [...tasks.values()];
     if (!local.length && !groups.length) return;
-    for (const t of local) pushTask(t);
-    if (groups.length) pushGroups();
+    for (const t of local) remote.setTask(t);
+    if (groups.length) remote.setGroups(groups);
   }
 
-  async function connect() {
+  function adoptList(list) {
+    if (!list.length) return;
+    tasks.clear();
+    for (const raw of list) {
+      const t = normalizeTask(raw);
+      tasks.set(t.id, t);
+    }
+    mirror();
+    emit();
+  }
+
+  // --- Supabase ------------------------------------------------------------
+
+  async function connectSupabase() {
+    let pending = [];
+    remote = await createSupabaseRemote({
+      onTasks: list => { pending = list; },
+      onTask: adoptTask,
+      onTaskRemoved: dropTask,
+      onGroups: adoptGroups,
+      onStatus: text => setStatus("shared", text),
+      onError: note
+    });
+
+    adoptList(pending);
+    seedIfEmpty(pending.length === 0);
+    setStatus("shared", "stato condiviso");
+  }
+
+  // --- database dell'artifact ----------------------------------------------
+
+  async function connectArtifact() {
     const runtime = typeof window !== "undefined" && window.claude ? window.claude : null;
     if (!runtime || typeof runtime.use !== "function") return;
 
-    let store;
+    let db;
     try {
-      store = await runtime.use("db");
+      db = await runtime.use("db");
     } catch (e) {
-      store = null;
+      db = null;
     }
-    if (!store) return;
-    db = store;
+    if (!db) return;
+
+    remote = {
+      setTask(task) {
+        return db.doc(TASKS + "/" + task.id).set(task).catch(() => note("salvataggio non riuscito"));
+      },
+      patchTask(id, patch, merged) {
+        const ref = db.doc(TASKS + "/" + id);
+        return ref.update(patch)
+          .catch(err => {
+            // update esige un documento già esistente: alla prima modifica lo si crea.
+            if (err && err.code === "invalid_argument") return ref.set(merged);
+            throw err;
+          })
+          .catch(() => note("salvataggio non riuscito"));
+      },
+      deleteTask(id) {
+        return db.doc(TASKS + "/" + id).delete().catch(() => note("eliminazione non riuscita"));
+      },
+      setGroups(list) {
+        return db.doc(META).set({ groups: list, updatedAt: new Date().toISOString() })
+          .catch(() => note("salvataggio dei gruppi non riuscito"));
+      }
+    };
 
     db.collection(TASKS).onSnapshot(
       snap => {
-        migrateIfEmpty(snap);
-        adoptTasks(snap);
+        if (!snap.metadata.fromCache) seedIfEmpty(snap.empty);
+        for (const change of snap.docChanges()) {
+          if (change.type === "removed") tasks.delete(change.doc.id);
+          else tasks.set(change.doc.id, normalizeTask(change.doc.data(), change.doc.id));
+        }
+        mirror();
         setStatus("shared", "stato condiviso");
       },
       err => {
-        db = null;
+        remote = null;
         setStatus("local", err && err.code === "revoked"
           ? "accesso condiviso revocato"
           : "solo su questo dispositivo");
@@ -218,14 +270,24 @@ export function createStore() {
     db.doc(META).onSnapshot(
       snap => {
         const data = snap.data();
-        if (data && Array.isArray(data.groups)) {
-          groups = sortGroups(data.groups.map(normalizeGroup));
-          mirror();
-          emit();
-        }
+        if (data && Array.isArray(data.groups)) adoptGroups(data.groups);
       },
       () => { /* i gruppi restano quelli locali */ }
     );
+  }
+
+  async function connect() {
+    if (supabaseConfigured()) {
+      try {
+        await connectSupabase();
+        return;
+      } catch (err) {
+        remote = null;
+        setStatus("local", "archivio condiviso non raggiungibile");
+        return;
+      }
+    }
+    await connectArtifact();
   }
 
   return {

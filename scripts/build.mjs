@@ -13,6 +13,8 @@ const MODULES = [
   "src/model.js",
   "src/accounts.js",
   "src/auth.js",
+  "src/config.js",
+  "src/remote-supabase.js",
   "src/store.js",
   "src/ui.js",
   "src/main.js"
